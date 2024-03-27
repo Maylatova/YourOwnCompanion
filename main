@@ -1,0 +1,106 @@
+import sys 
+import os
+import psutil
+import pyaudio
+import speech_recognition as sr
+from datetime import datetime
+import webbrowser
+import subprocess
+from random import choice
+from pygame import mixer
+import pygame
+
+commands_list = {
+    "commands": {
+        "name": ["бот", "помоги"],
+        "ended": ["стоп", "выключись"],
+        "times": ["время"],
+        "youtube": ["YouTube", "Ютуб", "ютубчик"],
+        "google": ["Google", "Гугл"],
+        "tiktok": ["TikTok", "тикток", "тики таки"],
+        "close_browser": ["закрой браузер", "закрой browser"],
+        "telegram": ["Telegram", "телеграм"],
+        "steam": ["Steam", "стим"],
+        "task_manager": ["task manager", "диспечер задач"],
+        "explorer": ["проводник"],
+        "search": [["загугли мне", "поиск в интернете", "найти"],
+                   ["видосик в TikTok", "видосик в тиктоке", "видосек в тик токе", "видосек в TikTok"]],
+        "music": ["музыка", "музыку", "включи музыку"],
+        "music_stop": ["выключи музыку"]
+    }
+}
+
+
+index_of_device = 1
+def mic_request():
+    with sr.Microphone(device_index=index_of_device) as source:
+        r = sr.Recognizer()
+        r.adjust_for_ambient_noise(source=source, duration=0.000001)
+        print("Говорите что-то:")
+        audio = r.listen(source)
+        try:
+            mic_text = r.recognize_google(audio, language="ru-RU")
+            main(mic_text)
+        except sr.UnknownValueError:
+            print("Речь не распознана")
+            return ""
+        except sr.RequestError as e:
+            print(f"Ошибка сервиса распознавания: {e}")
+            return ""
+
+
+def youtube():
+    webbrowser.open("https://www.youtube.com/")
+
+
+def google():
+    webbrowser.open("https://www.google.com/")
+
+
+def tiktok():
+    webbrowser.open("https://www.tiktok.com/ru-RU/")
+
+
+def search():
+    global text
+    tik_tok = "TikTok", "видосик в TikTok", "видосик в тиктоке", "видосек в тик токе", "видосек в TikTok"
+    for search_category in commands_list["commands"]["search"]:
+        if any(command in text.lower() for command in search_category):
+            if any(word in tik_tok for word in tik_tok) in search_category:
+                text = text.replace(search_category[0], "")
+                webbrowser.open("https://www.tiktok.com/search?q=" + text)
+            else:
+                text = text.replace(search_category[0], "")
+                webbrowser.open("https://www.google.com/search?q=" + text)
+            return    
+
+
+
+def music():
+    mixer.init()
+    while True:
+        path = 'resources/audio/music'
+        list_of_music = [file for file in os.listdir(path) if file.endswith('.mp3')]
+        if not list_of_music:
+            print("No music files found.")
+            break
+        name_of_audio = choice(list_of_music)
+        audio = os.path.join(path, name_of_audio)
+        sound = mixer.Sound(audio)
+        sound.play()
+        mic_response = mic_request()
+        if mic_response == "выключи музыку":
+            mixer.quit()
+            break
+    return
+
+
+def main(text):
+    for words in text.split():
+        for key, values in commands_list["commands"].items():
+            for command in values:
+                if words in command:
+                    result = globals()[key]() 
+                    return result
+
+mic_request()
